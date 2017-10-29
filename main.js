@@ -148,7 +148,7 @@ function createWindow () {
     width: 800,
     height: 600,
     resizable: false,
-    icon: __dirname + '/zookeeper-logo.icns'
+    icon: path.join(__dirname, 'assets/icons/png/zk.png')
   });
 
   win.loadURL('file://' + __dirname + '/index.html');
