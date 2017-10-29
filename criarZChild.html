@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en" class="fuelux">
+  <head>
+    <meta charset="utf-8">
+    <title>ZooKeeper GUI</title>
+    <style>
+        body {
+  margin: 0;
+  padding: 0;
+  background: #333;
+}
+
+#zChildContent {
+  background: #f5f5f5;
+  color: #000;
+  padding: 2%;
+  width: 96%;
+  height: 185px;
+  font-size: 16px;
+  font-weight: bold;
+  outline: none;
+  resize: none;
+  border: 0;
+}
+
+.inputClass {
+  background: #f5f5f5;
+  color: #000;
+  padding: 2%;
+  width: 96%;
+  height: 15px;
+  font-size: 16px;
+  font-weight: bold;
+  outline: none;
+  resize: none;
+  border: 0;
+}
+
+.salvar {
+  background: #45B760;
+  margin-top: 16px;
+  margin-right: 20px;
+  float: right;
+  padding: 15px;
+  font-size: 16px;
+  cursor: pointer;
+  color: black;
+  border: 0;
+}
+
+.cancelar {
+  background: grey;
+  margin-top: 16px;
+  margin-right: 20px;
+  float: right;
+  padding: 15px;
+  font-size: 16px;
+  cursor: pointer;
+  color: black;
+  border: 0;
+}
+    </style>
+  </head>
+  <body>
+        <input class="inputClass" type="text" id="childName" placeholder="Nome do ZNode filho">
+        <br><br>
+        <textarea id="zChildContent" placeholder="Conteudo"></textarea>
+        
+        <button class="salvar" onclick="require('electron').ipcRenderer.send('criarChildZNode', document.getElementById('childName').value, document.getElementById('zChildContent').value)">CRIAR</button>
+        <button class="cancelar" onclick="require('electron').ipcRenderer.send('sairEdit')">CANCELAR</button>
+  </body>
+</html>

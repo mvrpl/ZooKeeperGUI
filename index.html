@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>ZooKeeper GUI</title>
+    <link rel="stylesheet" type="text/css" href="css/main.css">
+	<link href="css/jquery.flexdatalist.min.css" rel="stylesheet" type="text/css">
+  </head>
+  <body>
+    <main class="main-wrapper">
+	<div class="inner-wrapper">
+		<div class="content-wrapper">
+			<header class="main-header">
+				<h1>Conexao ZooKeeper</h1>
+			</header>
+			<section class="login-form-wrapper">
+				<div class="login-form">
+					<fieldset>
+						<label for="user-name"><i class="fa fa-user"></i>Host</label>
+						<input type="text" class="flexdatalist" id="zkhost" list="hosts" />
+						<datalist class="datalist" id="hosts">
+						</datalist>
+					</fieldset>
+					<fieldset>
+						<a href="#" onclick="require('electron').ipcRenderer.send('setACL')">Setar ACL</a>
+						<input type="submit" class="submit" onclick="require('electron').ipcRenderer.send('connZK', document.getElementById('zkhost').value)" value="Login"/>
+					</fieldset>
+				</div>
+			</section>
+      <div><a style="color:aliceblue;text-decoration:none" href="#" onclick="require('electron').ipcRenderer.send('openURL', 'http://mvrpl.me');return false;">Author: Marcos Lima</a></div>
+		</div>
+	</div>
+</main>
+<script>window.$ = window.jQuery = require('jquery');</script>
+<script src="./jquery.flexdatalist.min.js"></script>
+<script>
+	$('.flexdatalist').flexdatalist({
+	 	minLength: 0
+});
+</script>
+  </body>
+</html>

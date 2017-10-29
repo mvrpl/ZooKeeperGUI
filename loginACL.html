@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en" class="fuelux">
+  <head>
+    <meta charset="utf-8">
+    <title>ZooKeeper GUI</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css">
+    <style>
+    .table {
+        width: 540px !important;
+    }
+    </style>
+  </head>
+  <body>
+    <section class="container">
+    <div class="table table-responsive">
+    <table class="table table-responsive table-striped table-bordered">
+    <br>
+    <tbody id="TextBoxContainer">
+        <td>
+            <select onchange="lista(0);" id="tipoLogin_0" class="tipoACL form-control">
+                <option value="DIGEST">Digest</option>
+                <option value="IP">IP</option>
+            </select>
+        </td>
+        <td>
+            <input id="usuarioDigestACL_0" name="DynamicTextBox" type="text" class="form-control" placeholder="Usuário" />
+        </td>
+        <td>
+            <input id="senhaDigestACL_0" name="DynamicTextBox" type="password" class="form-control" placeholder="Senha" />
+        </td>
+        <td>
+            <button type="button" class="btn btn-danger" disabled>
+                X
+            </button>
+        </td>
+    </tbody>
+    <tfoot>
+      <tr>
+        <th colspan="5">
+        <button id="btnAdd" type="button" class="btn btn-primary" data-toggle="tooltip" data-original-title="Add more controls">&nbsp; Adicionar&nbsp;</button></th>
+      </tr>
+    </tfoot>
+    </table>
+    <button onclick="enviar();">Enviar</button>
+    </div>
+    </section>
+    <!-- <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script> -->
+    <script>
+    window.$ = window.jQuery = require('jquery');
+
+    function enviar() {
+        var loginsArr = new Array();
+        var logins = document.querySelectorAll('tbody .tipoACL'), i;
+        for(i = 0; i < logins.length; ++i) {
+            var dados = new Object()
+            dados.tipo = $("#tipoLogin_"+i).val()
+            if ($("#tipoLogin_"+i).val() == "DIGEST") {
+                dados.usuario = $("#usuarioDigestACL_"+i).val()
+                dados.senha = $("#senhaDigestACL_"+i).val()
+            } else {
+                dados.ip = $("#usuarioDigestACL_"+i).val()
+            }
+            loginsArr.push(dados)
+        }
+        require('electron').ipcRenderer.send('loginsACL', JSON.stringify(loginsArr))
+    }
+    
+    function lista(n) {
+        if($('#tipoLogin_'+n).find(":selected").text() === "Digest") {
+            $("#usuarioDigestACL_"+n).attr('placeholder', 'Usuário');
+            $("#senhaDigestACL_"+n).attr('placeholder', 'Senha');
+            $("#senhaDigestACL_"+n).prop('readonly', false);
+        } else {
+            $("#usuarioDigestACL_"+n).attr('placeholder', 'IP');
+            $("#senhaDigestACL_"+n).prop('readonly', true);
+            $("#senhaDigestACL_"+n).attr('placeholder', '');
+            $("#senhaDigestACL_"+n).val('');
+        }
+    }
+    
+    $(function () {
+        var count = 1
+        $("#btnAdd").bind("click", function () {
+            var div = $("<tr />");
+            div.html(GetDynamicTextBox(count));
+            $("#TextBoxContainer").append(div);
+            count++
+        });
+        $("body").on("click", ".remove", function () {
+            $(this).closest("tr").remove();
+        });
+    });
+
+    function GetDynamicTextBox(count) {
+        return `
+        <td>
+            <select onchange="lista(${count});" id="tipoLogin_${count}" class="tipoACL form-control">
+                <option value="DIGEST">Digest</option>
+                <option value="IP">IP</option>
+            </select>
+        </td>
+        <td>
+            <input id="usuarioDigestACL_${count}" name="DynamicTextBox" type="text" class="form-control" placeholder="Usuário" />
+        </td>
+        <td>
+            <input id="senhaDigestACL_${count}" name="DynamicTextBox" type="password" class="form-control" placeholder="Senha" />
+        </td>
+        <td>
+            <button type="button" class="btn btn-danger remove">
+                X
+            </button>
+        </td>
+        `
+    }
+    </script>
+  </body>
+</html>

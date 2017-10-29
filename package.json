@@ -1,0 +1,35 @@
+{
+    "dependencies": {
+        "electron-default-menu": "^1.0.1",
+        "electron-installer-debian": "^0.6.0",
+        "electron-installer-dmg": "^0.2.1",
+        "electron-modal": "^1.0.0",
+        "electron-prompt": "^0.4.0",
+        "electron-settings": "^3.1.3",
+        "electron-store": "^1.3.0",
+        "golang": "^0.1.5-stable",
+        "jquery": "^3.2.1",
+        "list.js": "^1.5.0",
+        "node-mac-notifier": "0.0.13",
+        "node-notifier": "^5.1.2",
+        "node-zookeeper-client": "^0.2.2",
+        "react-desktop": "^0.3.2",
+        "zookeeper": "^3.4.9-3"
+    },
+    "devDependencies": {
+        "electron-installer-redhat": "^0.5.0",
+        "electron-packager": "^9.1.0",
+        "electron-prebuilt": "^1.4.13",
+        "electron-winstaller": "^2.6.3"
+    },
+    "main": "main.js",
+    "name": "ZooKeeperGUI",
+    "license": "MIT",
+    "description": "App for viewer ZooKeeper ZNodes.",
+    "scripts": {
+        "build": "electron-packager . ZooKeeperGUI --platform linux --arch x64 --out dist/",
+        "rpm64": "electron-installer-redhat --src . --dest dist/installers/ --arch x86_64",
+        "start": "electron ."
+    },
+    "version": "0.1.0"
+}
