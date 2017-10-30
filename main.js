@@ -152,7 +152,7 @@ function createWindow () {
   });
 
   win.loadURL('file://' + __dirname + '/index.html');
-  setMainMenu();
+  win.setMenu(null);
   //win.webContents.openDevTools()
 
   win.on('closed', () => {
@@ -265,7 +265,8 @@ ipcMain.on('setACL', function(event) {
         parent: win
     })
     winLoginACL.loadURL('file://' + __dirname + '/loginACL.html');
-    winLoginACL.show()
+    winLoginACL.show();
+    winLoginACL.setMenu(null);
     winLoginACL.on('close', function (event) {
       winLoginACL = null
     });
@@ -286,7 +287,8 @@ function criarZChild() {
         parent: win
     })
     winZNode.loadURL('file://' + __dirname + '/criarZChild.html');
-    winZNode.show()
+    winZNode.show();
+    winZNode.setMenu(null);
     winZNode.on('close', function (event) {
       winZNode = null
     });
