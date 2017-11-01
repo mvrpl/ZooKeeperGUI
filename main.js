@@ -243,7 +243,10 @@ function editarZNode() {
     })
     winZNode.setMenu(null);
     winZNode.loadURL('file://' + __dirname + '/editZNode.html');
-    winZNode.show()
+    winZNode.once("ready-to-show", () => {
+		win.setIgnoreMouseEvents(true)
+        winZNode.show();
+    });
     winZNode.on('close', function (event) {
       winZNode = null
     });
