@@ -7,6 +7,7 @@ const ipcMain = electron.ipcMain
 const Store = require('electron-store')
 const store = new Store()
 const notifier = require('node-notifier')
+const {dialog} = require('electron')
 
 var fs = require('fs')
 var packageJsonPath = __dirname + '/package.json'
@@ -16,6 +17,7 @@ var zkcli = null
 
 global.ZKPath = '/'
 global.aclData = new Array()
+global.notLock = true
 
 let win
 
@@ -41,6 +43,18 @@ function setMainMenu(windowName) {
             accelerator: 'CmdOrCtrl+I',
             click() {
               criarZChild()
+            }
+          },
+          {
+            label: 'Deletar ZNode',
+            click() {
+              delZNode()
+            }
+          },
+          {
+            label: 'Deletar ZNode (Recursivo)',
+            click() {
+              delRecZNode()
             }
           }
         ]
@@ -71,7 +85,8 @@ function listChildren(client, path, parent, callback) {
   client.getChildren(
       path,
       function (event) {
-          makeMenu(client, path, "/")
+        if (!notLock) notLock = true
+        makeMenu(client, path, parent)
       },
       function (error, children, stat) {
       if (error) {
@@ -94,6 +109,96 @@ function upZdata(path){
     document.getElementById("znodeContent").textContent = unescape("${result}")
     `)
   });
+}
+
+function delRecursive(path, cb){
+  var zk = zkcli
+  var deleteAll = function(zk, path){
+    var ret = cb(false)
+    listChildren(zk, path, "/"+path.split("/").slice(1,-1).join("/"), function (result) {
+      var total = 0
+      if(result) total = result.length
+      if(total == 0){
+        deletZNode(zk, path, function (result) {
+          if(result) cb(true)
+        });
+      } else {
+        for(var i in result){
+          var p = path+"/"+result[i]
+          deleteAll(zk, p)
+        }
+        deleteAll(zk, path)
+      }
+    })
+  }
+  deleteAll(zk, path)
+}
+
+function deletZNode(client, path, callback) {
+  client.remove(path, -1, function (error) {
+    if (error) {
+      if(callback) callback(false);
+      return;
+    }
+    if(callback) callback(true);
+  });
+}
+
+function delRecZNode() {
+  var choice = dialog.showMessageBox(
+    {
+        type: 'question',
+        buttons: ['Sim', 'Não'],
+        title: 'Confirme',
+        message: 'Deseja apagar '+ZKPath+' recursivamente ?'
+    });
+    if(choice == 0 && ZKPath != "/"){
+      delRecursive(ZKPath, function (ret) {
+        if(ret) {
+          ZKPath = "/"+ZKPath.split("/").slice(1,-1).join("/")
+          makeMenu(zkcli, ZKPath, "/"+ZKPath.split("/").slice(1,-1).join("/"))
+        }
+      })
+    } else if(choice == 0 && ZKPath === "/") {
+      dialog.showMessageBox(
+        {
+            type: 'error',
+            title: 'Erro',
+            message: 'Não é possível apagar o caminho / !'
+        });
+    }
+}
+
+function delZNode() {
+  var choice = dialog.showMessageBox(
+    {
+        type: 'question',
+        buttons: ['Sim', 'Não'],
+        title: 'Confirme',
+        message: 'Deseja apagar '+ZKPath+' ?'
+    });
+  if(choice == 0 && ZKPath != "/"){
+    deletZNode(zkcli, ZKPath, function (result) {
+      if(result) {
+        ZKPath = "/"+ZKPath.split("/").slice(1,-1).join("/")
+        makeMenu(zkcli, ZKPath, "/"+ZKPath.split("/").slice(1,-1).join("/"))
+      } else {
+        dialog.showMessageBox(
+          {
+              type: 'error',
+              title: 'Erro',
+              message: 'Erro ao apagar '+ZKPath+' !'
+          });
+      }
+    });
+  } else if(choice == 0 && ZKPath === "/") {
+    dialog.showMessageBox(
+      {
+          type: 'error',
+          title: 'Erro',
+          message: 'Não é possível apagar o caminho / !'
+      });
+  }
 }
 
 function getZKdata(client, path, callback) {
@@ -191,41 +296,43 @@ ipcMain.on('openURL', function(event, url) {
 
 
 function makeMenu(client, path, parent){
-  var menu = '';
-  listChildren(client, path, parent, function (result) {
-    for (var key in result) {
-      var caminho = path+'/'+result[key]
-      if(caminho.startsWith("//")) caminho = caminho.substr(1)
-      menu += '<li onclick="require(\\\'electron\\\').ipcRenderer.send(\\\'menuZK\\\', \\\''+caminho+'\\\');return false;"><a href="#">'+result[key]+'</a></li>'
-    }
+  if(global.notLock) {
+    var menu = '';
+    listChildren(client, path, parent, function (result) {
+      for (var key in result) {
+        var caminho = path+'/'+result[key]
+        if(caminho.startsWith("//")) caminho = caminho.substr(1)
+        menu += '<li onclick="require(\\\'electron\\\').ipcRenderer.send(\\\'menuZK\\\', \\\''+caminho+'\\\');return false;"><a href="#">'+result[key]+'</a></li>'
+      }
 
-    var paths = path.split("/")
-    var abs_path = ''
-    if (path != '/') {
-      abs_path += '/<a href="#" onclick="require(\\\'electron\\\').ipcRenderer.send(\\\'menuZK\\\', \\\'/\\\');return false;">ROOT</a>'
-      var link = ''
-      for(var key in paths){
-        if (key > 0){
-          link += '/'+paths[key]
-          if(key != paths.length-1){
-            abs_path += '/<a href="#" onclick="require(\\\'electron\\\').ipcRenderer.send(\\\'menuZK\\\', \\\''+link+'\\\');return false;">'+paths[key]+'</a>' 
-          } else {
-            abs_path += '/'+paths[key]
+      var paths = path.split("/")
+      var abs_path = ''
+      if (path != '/') {
+        abs_path += '/<a href="#" onclick="require(\\\'electron\\\').ipcRenderer.send(\\\'menuZK\\\', \\\'/\\\');return false;">ROOT</a>'
+        var link = ''
+        for(var key in paths){
+          if (key > 0){
+            link += '/'+paths[key]
+            if(key != paths.length-1){
+              abs_path += '/<a href="#" onclick="require(\\\'electron\\\').ipcRenderer.send(\\\'menuZK\\\', \\\''+link+'\\\');return false;">'+paths[key]+'</a>' 
+            } else {
+              abs_path += '/'+paths[key]
+            }
           }
         }
+      } else {
+        abs_path += '/ROOT'
       }
-    } else {
-      abs_path += '/ROOT'
-    }
-    win.webContents.executeJavaScript(`
-    document.getElementById("itens").innerHTML = '${menu}';
-    if ('${path}' === '/') {document.getElementById("back").style.display = 'none';document.getElementById("titlemenu").style.display = 'block'};
-    if ('${path}' !== '/') {document.getElementById("back").style.display = 'block';document.getElementById("titlemenu").style.display = 'none'};
-    document.getElementById("back").onclick = function() { require('electron').ipcRenderer.send('menuZK', '${parent}'); };
-    document.getElementById("searchZK").value = "";
-    document.getElementById("absolute_path").innerHTML = '${abs_path}'
-    `)
-  });
+      win.webContents.executeJavaScript(`
+      document.getElementById("itens").innerHTML = '${menu}';
+      if ('${path}' === '/') {document.getElementById("back").style.display = 'none';document.getElementById("titlemenu").style.display = 'block'};
+      if ('${path}' !== '/') {document.getElementById("back").style.display = 'block';document.getElementById("titlemenu").style.display = 'none'};
+      document.getElementById("back").onclick = function() { require('electron').ipcRenderer.send('menuZK', '${parent}'); };
+      document.getElementById("searchZK").value = "";
+      document.getElementById("absolute_path").innerHTML = '${abs_path}'
+      `)
+    });
+  }
 }
 
 ipcMain.on('sairEdit', function(event) {
@@ -241,6 +348,7 @@ function editarZNode() {
         resizable: false,
         parent: win
     })
+    notLock = false;
     winZNode.setMenu(null);
     winZNode.loadURL('file://' + __dirname + '/editZNode.html');
     winZNode.once("ready-to-show", () => {
@@ -248,7 +356,8 @@ function editarZNode() {
         winZNode.show();
     });
     winZNode.on('close', function (event) {
-      winZNode = null
+      winZNode = null;
+      notLock = true;
     });
     getZKdata(zkcli, global.ZKPath, function (result) {
       result = escape(result)
@@ -289,11 +398,13 @@ function criarZChild() {
         resizable: false,
         parent: win
     })
+    notLock = false;
     winZNode.loadURL('file://' + __dirname + '/criarZChild.html');
     winZNode.show();
     winZNode.setMenu(null);
     winZNode.on('close', function (event) {
-      winZNode = null
+      winZNode = null;
+      notLock = true;
     });
   }
 };
@@ -361,11 +472,13 @@ ipcMain.on('connZK', function(event, host) {
         makeMenu(zkcli, "/", parent)
         upZdata("/")
         ipcMain.on('menuZK', function(event, path) {
-          global.ZKPath = path
-          parent = path.split('/').slice(0, -1).join('/')
-          if(parent === '') parent = '/'
-          if (path) makeMenu(zkcli, path, parent)
-          upZdata(path)
+          if(global.notLock) {
+            global.ZKPath = path
+            parent = path.split('/').slice(0, -1).join('/')
+            if(parent === '') parent = '/'
+            if (path) makeMenu(zkcli, path, parent)
+            upZdata(path)
+          }
         })
       });
     });
