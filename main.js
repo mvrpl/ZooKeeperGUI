@@ -112,26 +112,33 @@ function upZdata(path){
 }
 
 function delRecursive(path, cb){
-  var zk = zkcli
-  var deleteAll = function(zk, path){
-    var ret = cb(false)
-    listChildren(zk, path, "/"+path.split("/").slice(1,-1).join("/"), function (result) {
+  var error = false
+  var mainPath = path
+  var deleteAll = function(path){
+    listChildren(zkcli, path, "/"+path.split("/").slice(1,-1).join("/"), function (result) {
       var total = 0
       if(result) total = result.length
       if(total == 0){
-        deletZNode(zk, path, function (result) {
-          if(result) cb(true)
+        deletZNode(zkcli, path, function (result) {
+          if(!result) {
+            error = false
+            cb(false)
+          } else {
+            error = true
+            cb(true)
+          }
         });
-      } else {
+        console.log(error)
+        if(error) deleteAll(mainPath)
+      } else if(total > 0) {
         for(var i in result){
           var p = path+"/"+result[i]
-          deleteAll(zk, p)
+          deleteAll(p)
         }
-        deleteAll(zk, path)
       }
     })
   }
-  deleteAll(zk, path)
+  deleteAll(path)
 }
 
 function deletZNode(client, path, callback) {
@@ -152,14 +159,24 @@ function delRecZNode() {
         title: 'Confirme',
         message: 'Deseja apagar '+ZKPath+' recursivamente ?'
     });
+    var path = ZKPath
+    var pathp = "/"+path.split("/").slice(1,-1).join("/")
     if(choice == 0 && ZKPath != "/"){
-      delRecursive(ZKPath, function (ret) {
+      delRecursive(path, function (ret) {
         if(ret) {
-          ZKPath = "/"+ZKPath.split("/").slice(1,-1).join("/")
-          makeMenu(zkcli, ZKPath, "/"+ZKPath.split("/").slice(1,-1).join("/"))
+          ZKPath = pathp
+          makeMenu(zkcli, pathp, "/"+pathp.split("/").slice(1,-1).join("/"))
+        } else {
+          dialog.showMessageBox(
+            {
+                type: 'error',
+                title: 'Erro',
+                message: 'Erro ao apagar '+path+' !'
+            });
+            return;
         }
       })
-    } else if(choice == 0 && ZKPath === "/") {
+    } else if(choice == 0 && path === "/") {
       dialog.showMessageBox(
         {
             type: 'error',
