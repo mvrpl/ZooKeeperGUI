@@ -89,7 +89,7 @@ function listChildren(client, path, parent, callback) {
         makeMenu(client, path, parent)
       },
       function (error, children, stat) {
-      if (error) {
+      if (error && error.toString().indexOf("NO_NODE") == -1) {
           console.log(
               'Failed to list children of %s due to: %s.',
               path,
@@ -114,7 +114,7 @@ function upZdata(path){
 function delRecursive(path, cb){
   var error = false
   var mainPath = path
-  var deleteAll = function(path){
+  var deleteAll = function(path, c){
     listChildren(zkcli, path, "/"+path.split("/").slice(1,-1).join("/"), function (result) {
       var total = 0
       if(result) total = result.length
@@ -128,8 +128,7 @@ function delRecursive(path, cb){
             cb(true)
           }
         });
-        console.log(error)
-        if(error) deleteAll(mainPath)
+        deleteAll(mainPath)
       } else if(total > 0) {
         for(var i in result){
           var p = path+"/"+result[i]
@@ -143,7 +142,7 @@ function delRecursive(path, cb){
 
 function deletZNode(client, path, callback) {
   client.remove(path, -1, function (error) {
-    if (error) {
+    if (error && error.toString().indexOf("NO_NODE") == -1) {
       if(callback) callback(false);
       return;
     }
